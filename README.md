@@ -10,6 +10,28 @@ Your code, files and commands stay on your machine.
 ln -sf "$PWD/cli/pantheon" ~/.local/bin/pantheon
 ```
 
+## Interactive
+
+Run `pantheon` with no arguments (on a terminal) for the menu:
+
+```
+  Route       ● ON  Pantheon Routes
+  Repair      ● configured
+  Credential  ● none — run Setup
+  Muse        ● installed
+
+  ❯ Set up / change key
+    Toggle route
+    Test route (doctor)
+    Repair connection (heal)
+    Load config URL
+    Refresh
+    Quit
+```
+
+Arrow keys to move, Enter to pick, `q` to quit. Plain subcommands below still
+work for scripts and CI.
+
 ## Commands
 
 | command | does |

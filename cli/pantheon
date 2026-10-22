@@ -18,7 +18,9 @@ import pathlib
 import shutil
 import subprocess
 import sys
+import termios
 import time
+import tty
 
 HOME = pathlib.Path.home()
 SETTINGS = HOME / ".config/muse/settings.json"
@@ -256,8 +258,141 @@ def cmd_doctor(heal: bool) -> int:
     return 0 if ok else 1
 
 
+
+
+# ------------------------------------------------------------------ ui
+
+class C:
+    reset = "\x1b[0m"
+    bold = "\x1b[1m"
+    dim = "\x1b[2m"
+    hide = "\x1b[?25l"
+    show = "\x1b[?25h"
+    clear = "\x1b[2J\x1b[H"
+    up = "\x1b[A"
+    primary = "\x1b[38;2;255;80;24m"
+    secondary = "\x1b[38;2;255;159;28m"
+    muted = "\x1b[38;2;140;140;145m"
+    success = "\x1b[38;2;65;195;70m"
+    error = "\x1b[38;2;255;59;48m"
+    info = "\x1b[38;2;33;150;243m"
+
+
+LOGO = f"""{C.primary}{C.bold}
+  ██████╗  █████╗ ███╗   ██╗████████╗██╗  ██╗███████╗ ██████╗ ███╗   ██╗
+  ██╔══██╗██╔══██╗████╗  ██║╚══██╔══╝██║  ██║██╔════╝██╔═══██╗████╗  ██║
+  ██████╔╝███████║██╔██╗ ██║   ██║   ███████║█████╗  ██║   ██║██╔██╗ ██║
+  ██╔═══╝ ██╔══██║██║╚██╗██║   ██║   ██╔══██║██╔══╝  ██║   ██║██║╚██╗██║
+  ██║     ██║  ██║██║ ╚████║   ██║   ██║  ██║███████╗╚██████╔╝██║ ╚████║
+  ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═══╝{C.reset}
+{C.muted}  Muse Code · route control{C.reset}
+"""
+
+
+def is_tty() -> bool:
+    return sys.stdin.isatty() and sys.stdout.isatty()
+
+
+def dot(ok: bool) -> str:
+    return f"{C.success}●{C.reset} " if ok else f"{C.error}●{C.reset} "
+
+
+def header() -> None:
+    on = active_proxy() is not None
+    providers = read_json(HOME / ".config/muse/auth.json").get("providers", {})
+    print(LOGO)
+    print(f"  {C.bold}Route{C.reset}       {dot(on)}{C.bold}{'ON' if on else 'OFF'}{C.reset}"
+          f"  {C.muted}{hide(active_proxy()) if on else 'direct'}{C.reset}")
+    print(f"  {C.bold}Repair{C.reset}      {dot(heal_config() is not None)}"
+          f"{C.muted}{'configured' if heal_config() else 'not configured'}{C.reset}")
+    print(f"  {C.bold}Credential{C.reset}  {dot(bool(providers))}"
+          f"{C.muted}{', '.join(providers) if providers else 'none — run Setup'}{C.reset}")
+    print(f"  {C.bold}Muse{C.reset}        {dot(pathlib.Path(muse_bin()).exists())}"
+          f"{C.muted}{'installed' if pathlib.Path(muse_bin()).exists() else 'missing'}{C.reset}")
+    print()
+
+
+def choose(options: list[str], selected: int = 0) -> int | None:
+    """Arrow-key menu. Returns the index, or None on q / ctrl-c."""
+    if not is_tty():
+        for i, option in enumerate(options, 1):
+            print(f"  {i}. {option}")
+        try:
+            raw = input("  select: ").strip()
+        except EOFError:
+            return None
+        return int(raw) - 1 if raw.isdigit() and 1 <= int(raw) <= len(options) else None
+
+    fd = sys.stdin.fileno()
+    old = termios.tcgetattr(fd)
+    sys.stdout.write(C.hide)
+    try:
+        tty.setraw(fd)
+        while True:
+            for i, option in enumerate(options):
+                if i == selected:
+                    print(f"  {C.primary}❯ {C.bold}{option}{C.reset}")
+                else:
+                    print(f"  {C.muted}  {option}{C.reset}")
+            sys.stdout.flush()
+            key = sys.stdin.read(1)
+            if key in ("q", "Q", "\x03"):
+                return None
+            if key == "\x1b":
+                rest = sys.stdin.read(2)
+                if rest == "[A":
+                    selected = (selected - 1) % len(options)
+                elif rest == "[B":
+                    selected = (selected + 1) % len(options)
+            elif key in ("\r", "\n"):
+                return selected
+            sys.stdout.write(f"\x1b[{len(options)}A")
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old)
+        sys.stdout.write(C.show)
+        sys.stdout.flush()
+
+
+def pause() -> None:
+    try:
+        input(f"\n{C.muted}  press Enter to continue{C.reset}")
+    except EOFError:
+        pass
+
+
+def interactive() -> int:
+    actions = ["Set up / change key", "Toggle route", "Test route (doctor)",
+               "Repair connection (heal)", "Load config URL", "Refresh", "Quit"]
+    while True:
+        print(C.clear, end="")
+        header()
+        index = choose(actions)
+        if index is None or actions[index] == "Quit":
+            return 0
+        choice = actions[index]
+        print()
+        if choice == "Set up / change key":
+            rc = cmd_setup()
+        elif choice == "Toggle route":
+            rc = cmd_off() if active_proxy() else cmd_on()
+        elif choice == "Test route (doctor)":
+            rc = cmd_doctor(True)
+        elif choice == "Repair connection (heal)":
+            rc = cmd_heal()
+        elif choice == "Load config URL":
+            url = input("  Config URL: ").strip()
+            rc = cmd_config(url) if url else 1
+        else:
+            rc = 0
+        if rc != 0:
+            print(f"  {C.error}✗ failed{C.reset}")
+        pause()
+
+
 def main() -> int:
     args = sys.argv[1:]
+    if not args and is_tty():
+        return interactive()
     command = args[0] if args else "status"
     if command == "status":
         return cmd_status()
