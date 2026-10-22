@@ -1,0 +1,66 @@
+#!/bin/bash
+# Muse Setup — GUI launcher. Double-click the .app.
+set -u
+QUIET="${MUSE_SETUP_SILENT:-0}"
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+say() {
+  if [ "$QUIET" = "1" ]; then
+    echo "$1"
+  else
+    osascript -e "display dialog \"$1\" buttons {\"OK\"} default button \"OK\" with title \"Muse Setup\"" >/dev/null 2>&1
+  fi
+}
+
+fail() {
+  if [ "$QUIET" = "1" ]; then
+    echo "FAILED: $1" >&2
+  else
+    osascript -e "display dialog \"$1\" buttons {\"OK\"} default button \"OK\" with title \"Muse Setup\" with icon stop" >/dev/null 2>&1
+  fi
+  exit 1
+}
+
+ask() {
+  local prompt="$1" hidden="${2:-0}" extra=""
+  [ "$hidden" = "1" ] && extra=" with hidden answer"
+  osascript \
+    -e "display dialog \"${prompt}\" default answer \"\"${extra} buttons {\"Cancel\", \"Continue\"} default button \"Continue\" with title \"Muse Setup\"" \
+    -e 'text returned of result' 2>/dev/null || exit 0
+}
+
+# Env overrides exist so this can be tested / deployed silently.
+if [ -z "${MUSE_PROXY_USER:-}" ] || [ -z "${MUSE_PROXY_PASS:-}" ] || [ -z "${META_API_KEY:-}" ]; then
+  say "Hi! This sets up Muse on your Mac.
+
+You'll need:
+  • the proxy username and password from your admin
+  • your own Meta API key (dev.meta.ai → API Keys)
+
+It takes about a minute."
+  MUSE_PROXY_USER="$(ask 'Proxy username')"
+  [ -n "$MUSE_PROXY_USER" ] || exit 0
+  MUSE_PROXY_PASS="$(ask 'Proxy password' 1)"
+  [ -n "$MUSE_PROXY_PASS" ] || exit 0
+  META_API_KEY="$(ask 'Your Meta API key (input hidden)' 1)"
+  [ -n "$META_API_KEY" ] || exit 0
+fi
+
+export MUSE_PROXY_USER MUSE_PROXY_PASS META_API_KEY
+[ "$QUIET" = "1" ] || osascript -e 'display notification "Installing and verifying…" with title "Muse Setup"' >/dev/null 2>&1
+OUT=$(/usr/bin/python3 "$DIR/../Resources/setup.py" 2>&1)
+RC=$?
+
+if [ $RC -eq 0 ]; then
+  say "Muse is ready.
+
+Open Terminal, cd into a project, and run:
+
+    muse
+
+(If it says \"transport error\", tell your admin — the egress proxy is down.)"
+else
+  fail "Setup failed:
+
+$(printf '%s' "$OUT" | tail -c 700)"
+fi
