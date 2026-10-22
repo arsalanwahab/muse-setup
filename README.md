@@ -7,8 +7,7 @@ the egress country, your code and commands stay on your machine).
 Two deliverables:
 
 ```
-desktop/macos/Pantheon Setup.app  setup wizard (native dialogs)
-desktop/macos/Pantheon Egress.app menu-bar + HTML window egress toggle
+desktop/macos/Pantheon Egress.app  single app: setup, toggle, menu bar, HTML UI
 desktop/windows/PantheonSetup.exe setup wizard (no console)
 desktop/windows/PantheonTray.exe  tray toggle (no console)
 desktop/windows/PantheonSetup.cmd script fallback

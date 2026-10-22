@@ -37,6 +37,12 @@ def main() -> None:
     settings_path.write_text(json.dumps(settings, indent=2) + "\n")
     settings_path.chmod(0o600)
 
+    route_dir = pathlib.Path.home() / ".config" / "muse-vpn"
+    route_dir.mkdir(parents=True, exist_ok=True)
+    route_file = route_dir / "proxy-url"
+    route_file.write_text(proxy + "\n")
+    route_file.chmod(0o600)
+
     stored = subprocess.run(
         [exe, "auth", "set", "--provider", "meta", "--api-key-stdin"],
         input=key + "\n", text=True, capture_output=True,

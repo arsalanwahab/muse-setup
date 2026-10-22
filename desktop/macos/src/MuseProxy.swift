@@ -38,14 +38,52 @@ func setProxy(_ value: String?) {
 
 func isOn() -> Bool { currentProxy() != nil }
 func toggle() { setProxy(isOn() ? nil : savedProxyURL()) }
+
 func proxyHost() -> String {
     // Never surface the endpoint address in the UI.
     return currentProxy() == nil ? "no route configured" : "Pantheon Routes"
 }
 
+// Runs the bundled setup script with the credentials supplied in the UI.
+func runSetup(user: String, pass: String, key: String) -> (ok: Bool, message: String) {
+    guard let script = Bundle.main.url(forResource: "setup", withExtension: "py") else {
+        return (false, "setup.py is missing from the app bundle")
+    }
+    let proc = Process()
+    proc.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
+    proc.arguments = [script.path]
+    var env = ProcessInfo.processInfo.environment
+    env["MUSE_PROXY_USER"] = user
+    env["MUSE_PROXY_PASS"] = pass
+    env["META_API_KEY"] = key
+    proc.environment = env
+
+    let pipe = Pipe()
+    proc.standardOutput = pipe
+    proc.standardError = pipe
+    do { try proc.run() } catch {
+        return (false, "could not start setup: \(error.localizedDescription)")
+    }
+    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+    proc.waitUntilExit()
+    let text = String(data: data, encoding: .utf8) ?? ""
+    if proc.terminationStatus == 0 { return (true, text) }
+    return (false, text.trimmingCharacters(in: .whitespacesAndNewlines).suffix(600).description)
+}
+
 let args = CommandLine.arguments
 if args.contains("--status") { print(isOn() ? "on" : "off"); exit(0) }
 if args.contains("--toggle") { toggle(); print(isOn() ? "on" : "off"); exit(0) }
+if args.contains("--setup") {
+    let env = ProcessInfo.processInfo.environment
+    guard let u = env["MUSE_PROXY_USER"], let p = env["MUSE_PROXY_PASS"], let k = env["META_API_KEY"] else {
+        print("need MUSE_PROXY_USER / MUSE_PROXY_PASS / META_API_KEY")
+        exit(2)
+    }
+    let result = runSetup(user: u, pass: p, key: k)
+    print(result.message.trimmingCharacters(in: .whitespacesAndNewlines))
+    exit(result.ok ? 0 : 1)
+}
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKScriptMessageHandler {
     var statusItem: NSStatusItem!
@@ -58,6 +96,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
 
         let menu = NSMenu()
         menu.addItem(NSMenuItem(title: "Show Window", action: #selector(showWindow), keyEquivalent: "o"))
+        let setupItem = NSMenuItem(title: "Set Up / Change Key…", action: #selector(showSetup), keyEquivalent: ",")
+        setupItem.target = self
+        menu.addItem(setupItem)
         toggleItem = NSMenuItem(title: "", action: #selector(doToggle), keyEquivalent: "")
         toggleItem.target = self
         menu.addItem(toggleItem)
@@ -77,7 +118,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         webView = WKWebView(frame: .zero, configuration: config)
         webView.setValue(false, forKey: "drawsBackground")
 
-        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 380, height: 300),
+        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 380, height: 330),
                           styleMask: [.titled, .closable], backing: .buffered, defer: false)
         window.title = "Pantheon Egress"
         window.center()
@@ -97,25 +138,51 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         NSApp.activate(ignoringOtherApps: true)
     }
 
+    @objc func showSetup() {
+        showWindow()
+        webView?.evaluateJavaScript("showSetup();", completionHandler: nil)
+    }
+
     @objc func doToggle() {
         toggle()
         refresh()
     }
 
     func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
-        switch message.body as? String {
+        guard let body = message.body as? [String: Any], let action = body["action"] as? String else { return }
+
+        switch action {
         case "toggle":
             toggle()
+            refresh()
+        case "setup":
+            guard let user = body["user"] as? String, let pass = body["pass"] as? String, let key = body["key"] as? String else { return }
+            DispatchQueue.global().async {
+                let result = runSetup(user: user, pass: pass, key: key)
+                DispatchQueue.main.async {
+                    if result.ok {
+                        self.setupResult(ok: true, message: "Ready.")
+                        self.refresh()
+                    } else {
+                        self.setupResult(ok: false, message: result.message)
+                    }
+                }
+            }
         default:
-            break
+            refresh()
         }
-        refresh()
+    }
+
+    func setupResult(ok: Bool, message: String) {
+        guard let data = try? JSONSerialization.data(withJSONObject: ["ok": ok, "message": message]),
+              let json = String(data: data, encoding: .utf8) else { return }
+        webView?.evaluateJavaScript("setupResult(\(json));", completionHandler: nil)
     }
 
     func refresh() {
         let on = isOn()
         statusItem.button?.title = on ? "🌐" : "○"
-        statusItem.button?.toolTip = on ? "Pantheon: US egress ON" : "Pantheon: US egress OFF (direct)"
+        statusItem.button?.toolTip = on ? "Pantheon Routes: ON" : "Pantheon Routes: OFF (direct)"
         toggleItem?.title = on ? "Turn US egress off" : "Turn US egress on"
 
         let state: [String: Any] = ["on": on, "host": on ? proxyHost() : ""]
