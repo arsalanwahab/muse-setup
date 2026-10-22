@@ -82,6 +82,10 @@
         <button class="off" onclick="hideSetup()">Cancel</button>
       </div>
       <div id="setupMsg"></div>
+      <div class="row" style="margin-top:2px">
+        <input id="cfg" placeholder="Config URL (optional)" autocomplete="off">
+        <button class="off" onclick="loadConfig()">Load</button>
+      </div>
     </div>
 
     <div class="spacer"></div>
@@ -134,6 +138,17 @@
       document.getElementById('save').textContent = 'Working…';
       document.getElementById('setupMsg').textContent = 'Installing and verifying. This can take a minute.';
       post({action: 'setup', user: user, pass: pass, key: key});
+    }
+
+    function loadConfig() {
+      const url = document.getElementById('cfg').value.trim();
+      if (!url) { document.getElementById('setupMsg').textContent = 'Paste a config URL first.'; return; }
+      document.getElementById('setupMsg').textContent = 'Downloading config…';
+      post({action: 'loadConfig', url: url});
+    }
+
+    function configResult(result) {
+      document.getElementById('setupMsg').textContent = result.message;
     }
 
     function setupResult(result) {

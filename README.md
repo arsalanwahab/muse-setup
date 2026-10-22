@@ -53,6 +53,21 @@ Rebuild from source (needs Xcode command-line tools):
 swiftc -O desktop/macos/src/MuseProxy.swift -o MuseProxy -framework Cocoa
 ```
 
+## Changing the route without a new build
+
+The route lives outside the app, in `~/.config/muse-vpn/proxy-url`. In the app:
+**Set Up / Change Key… -> Config URL -> Load**. It downloads JSON of the form
+
+```json
+{ "route": "http://user:pass@host:port" }
+```
+
+validates it, saves it, and applies it immediately. Host that file anywhere
+(GitHub raw, S3, a gist in a private repo) and every install can pick up a new
+route without rebuilding or redistributing the app.
+
+The config URL must be `https`.
+
 ## Windows
 
 1. Unzip and run **`PantheonSetup.exe`** (no console window). If your AV blocks

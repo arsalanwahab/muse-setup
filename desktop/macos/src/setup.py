@@ -17,7 +17,8 @@ def main() -> None:
     pwd = os.environ["MUSE_PROXY_PASS"]
     key = os.environ["META_API_KEY"]
 
-    proxy = (
+    route = os.environ.get("MUSE_ROUTE_URL", "").strip()
+    proxy = route or (
         f"http://{urllib.parse.quote(user, safe='')}:"
         f"{urllib.parse.quote(pwd, safe='')}@{HOST}"
     )

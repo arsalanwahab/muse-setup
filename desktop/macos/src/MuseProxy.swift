@@ -36,6 +36,12 @@ func setProxy(_ value: String?) {
     }
 }
 
+func saveRoute(_ url: String) {
+    try? FileManager.default.createDirectory(at: proxyURLFile.deletingLastPathComponent(), withIntermediateDirectories: true)
+    try? url.write(to: proxyURLFile, atomically: true, encoding: .utf8)
+    try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: proxyURLFile.path)
+}
+
 func isOn() -> Bool { currentProxy() != nil }
 func toggle() { setProxy(isOn() ? nil : savedProxyURL()) }
 
@@ -56,6 +62,7 @@ func runSetup(user: String, pass: String, key: String) -> (ok: Bool, message: St
     env["MUSE_PROXY_USER"] = user
     env["MUSE_PROXY_PASS"] = pass
     env["META_API_KEY"] = key
+    if let route = savedProxyURL() { env["MUSE_ROUTE_URL"] = route }
     proc.environment = env
 
     let pipe = Pipe()
@@ -155,6 +162,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         case "toggle":
             toggle()
             refresh()
+        case "loadConfig":
+            guard let text = body["url"] as? String, let url = URL(string: text) else { return }
+            DispatchQueue.global().async {
+                guard url.scheme == "https" else {
+                    DispatchQueue.main.async { self.configResult(ok: false, message: "Config URL must be https.") }
+                    return
+                }
+                do {
+                    let data = try Data(contentsOf: url)
+                    guard let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                          let route = obj["route"] as? String,
+                          let routeURL = URL(string: route), routeURL.host != nil else {
+                        DispatchQueue.main.async { self.configResult(ok: false, message: "Config file must contain {\"route\": \"http://user:pass@host:port\"}.") }
+                        return
+                    }
+                    saveRoute(route)
+                    DispatchQueue.main.async {
+                        if isOn() { setProxy(route) }
+                        self.configResult(ok: true, message: "Route updated.")
+                        self.refresh()
+                    }
+                } catch {
+                    DispatchQueue.main.async { self.configResult(ok: false, message: "Download failed: \(error.localizedDescription)") }
+                }
+            }
         case "setup":
             guard let user = body["user"] as? String, let pass = body["pass"] as? String, let key = body["key"] as? String else { return }
             DispatchQueue.global().async {
@@ -171,6 +203,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         default:
             refresh()
         }
+    }
+
+    func configResult(ok: Bool, message: String) {
+        guard let data = try? JSONSerialization.data(withJSONObject: ["ok": ok, "message": message]),
+              let json = String(data: data, encoding: .utf8) else { return }
+        webView?.evaluateJavaScript("configResult(\(json));", completionHandler: nil)
     }
 
     func setupResult(ok: Bool, message: String) {
