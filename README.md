@@ -9,6 +9,7 @@ Two deliverables:
 ```
 desktop/cli/pantheon.py     CLI: status / on / off / heal / config / setup / doctor
 desktop/cli/setup.py        installer core used by `pantheon setup`
+desktop/windows/pantheon.ps1     Windows CLI (same subcommands)
 desktop/windows/PantheonSetup.exe  Windows setup wizard (no console)
 desktop/windows/PantheonTray.exe   Windows tray toggle
 ```
@@ -69,6 +70,17 @@ Setup also retries once automatically after a heal when verification fails with
 a transport/timeout error. The endpoint only edits the SSH ingress rule; it
 grants no shell without the private key. Deployment source is in
 `ops/lambda/pantheon_heal.py`.
+
+## Windows (CLI)
+
+```bat
+pantheon.cmd status
+pantheon.cmd setup
+pantheon.cmd on | off | heal | doctor --heal
+pantheon.cmd config https://example.com/route.json
+```
+
+Same subcommands as macOS. `pantheon.ps1` is plain PowerShell 5.1; no extra runtime.
 
 ## Windows
 
