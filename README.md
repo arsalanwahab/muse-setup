@@ -68,6 +68,23 @@ route without rebuilding or redistributing the app.
 
 The config URL must be `https`.
 
+## Auto-heal (SSH IP changes)
+
+ISP addresses change often, which breaks the security-group rule for SSH. The
+app has **Repair connection** (window link + menu). It POSTs to a Lambda
+Function URL that rewrites the SSH rule to the caller's current IP.
+
+Config lives in `~/.config/muse-vpn/heal.json` (mode 600):
+
+```json
+{ "url": "https://<id>.lambda-url.us-east-1.on.aws/", "token": "<shared secret>" }
+```
+
+Setup also retries once automatically after a heal when verification fails with
+a transport/timeout error. The endpoint only edits the SSH ingress rule; it
+grants no shell without the private key. Deployment source is in
+`ops/lambda/pantheon_heal.py`.
+
 ## Windows
 
 1. Unzip and run **`PantheonSetup.exe`** (no console window). If your AV blocks

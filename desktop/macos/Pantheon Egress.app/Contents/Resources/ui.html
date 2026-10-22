@@ -71,6 +71,7 @@
         <span class="label">US egress OFF</span>
       </div>
       <div id="host" class="host">direct — no models available here</div>
+      <div id="note" class="foot"></div>
     </div>
 
     <div id="setup" class="panel">
@@ -93,6 +94,7 @@
     <div id="actions">
       <button id="toggle" class="off" onclick="post({action:'toggle'})">Turn On</button>
       <button class="link" onclick="showSetup()">Set up / change key…</button>
+      <button class="link" onclick="repair()">Repair connection</button>
     </div>
 
     <div class="foot">Only model API traffic is routed. Your code and commands stay on this Mac.</div>
@@ -149,6 +151,15 @@
 
     function configResult(result) {
       document.getElementById('setupMsg').textContent = result.message;
+    }
+
+    function repair() {
+      document.getElementById('note').textContent = 'Repairing…';
+      post({action: 'heal'});
+    }
+
+    function healResult(result) {
+      document.getElementById('note').textContent = result.message;
     }
 
     function setupResult(result) {

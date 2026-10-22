@@ -42,6 +42,44 @@ func saveRoute(_ url: String) {
     try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: proxyURLFile.path)
 }
 
+struct HealConfig { let url: URL; let token: String }
+
+func healConfig() -> HealConfig? {
+    let file = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".config/muse-vpn/heal.json")
+    guard let data = try? Data(contentsOf: file),
+          let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+          let raw = obj["url"] as? String, let url = URL(string: raw),
+          let token = obj["token"] as? String else { return nil }
+    return HealConfig(url: url, token: token)
+}
+
+func healRoute() -> (ok: Bool, message: String) {
+    guard let cfg = healConfig() else { return (false, "no repair config installed") }
+    var request = URLRequest(url: cfg.url)
+    request.httpMethod = "POST"
+    request.setValue("application/json", forHTTPHeaderField: "content-type")
+    request.httpBody = try? JSONSerialization.data(withJSONObject: ["token": cfg.token])
+    request.timeoutInterval = 20
+
+    let sem = DispatchSemaphore(value: 0)
+    var ok = false
+    var message = "repair failed"
+    URLSession.shared.dataTask(with: request) { data, response, error in
+        defer { sem.signal() }
+        if let error { message = error.localizedDescription; return }
+        guard let http = response as? HTTPURLResponse, let data else { message = "no response"; return }
+        ok = http.statusCode == 200
+        if let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let cidr = obj["cidr"] as? String {
+            message = ok ? "repaired for \(cidr)" : "repair failed"
+        } else if !ok {
+            message = "repair failed (HTTP \(http.statusCode))"
+        }
+    }.resume()
+    _ = sem.wait(timeout: .now() + 25)
+    return (ok, message)
+}
+
 func isOn() -> Bool { currentProxy() != nil }
 func toggle() { setProxy(isOn() ? nil : savedProxyURL()) }
 
@@ -81,6 +119,11 @@ func runSetup(user: String, pass: String, key: String) -> (ok: Bool, message: St
 let args = CommandLine.arguments
 if args.contains("--status") { print(isOn() ? "on" : "off"); exit(0) }
 if args.contains("--toggle") { toggle(); print(isOn() ? "on" : "off"); exit(0) }
+if args.contains("--heal") {
+    let result = healRoute()
+    print(result.message)
+    exit(result.ok ? 0 : 1)
+}
 if args.contains("--setup") {
     let env = ProcessInfo.processInfo.environment
     guard let u = env["MUSE_PROXY_USER"], let p = env["MUSE_PROXY_PASS"], let k = env["META_API_KEY"] else {
@@ -187,10 +230,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                     DispatchQueue.main.async { self.configResult(ok: false, message: "Download failed: \(error.localizedDescription)") }
                 }
             }
+        case "heal":
+            DispatchQueue.global().async {
+                let result = healRoute()
+                DispatchQueue.main.async { self.healResult(ok: result.ok, message: result.message) }
+            }
         case "setup":
             guard let user = body["user"] as? String, let pass = body["pass"] as? String, let key = body["key"] as? String else { return }
             DispatchQueue.global().async {
-                let result = runSetup(user: user, pass: pass, key: key)
+                var result = runSetup(user: user, pass: pass, key: key)
+                // Self-repair once when the network path looks broken.
+                if !result.ok, result.message.lowercased().contains("transport error") || result.message.lowercased().contains("timed out") {
+                    let heal = healRoute()
+                    if heal.ok { result = runSetup(user: user, pass: pass, key: key) }
+                }
                 DispatchQueue.main.async {
                     if result.ok {
                         self.setupResult(ok: true, message: "Ready.")
@@ -209,6 +262,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         guard let data = try? JSONSerialization.data(withJSONObject: ["ok": ok, "message": message]),
               let json = String(data: data, encoding: .utf8) else { return }
         webView?.evaluateJavaScript("configResult(\(json));", completionHandler: nil)
+    }
+
+    func healResult(ok: Bool, message: String) {
+        guard let data = try? JSONSerialization.data(withJSONObject: ["ok": ok, "message": message]),
+              let json = String(data: data, encoding: .utf8) else { return }
+        webView?.evaluateJavaScript("healResult(\(json));", completionHandler: nil)
     }
 
     func setupResult(ok: Bool, message: String) {
