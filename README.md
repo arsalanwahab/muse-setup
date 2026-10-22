@@ -7,10 +7,10 @@ the egress country, your code and commands stay on your machine).
 Two deliverables:
 
 ```
-desktop/macos/Pantheon Egress.app  single app: setup, toggle, menu bar, HTML UI
-desktop/windows/PantheonSetup.exe setup wizard (no console)
-desktop/windows/PantheonTray.exe  tray toggle (no console)
-desktop/windows/PantheonSetup.cmd script fallback
+desktop/cli/pantheon.py     CLI: status / on / off / heal / config / setup / doctor
+desktop/cli/setup.py        installer core used by `pantheon setup`
+desktop/windows/PantheonSetup.exe  Windows setup wizard (no console)
+desktop/windows/PantheonTray.exe   Windows tray toggle
 ```
 
 ## What you need before running
@@ -19,39 +19,24 @@ desktop/windows/PantheonSetup.cmd script fallback
 2. **Your own Meta API key**: sign in at <https://dev.meta.ai> -> API Keys ->
    Create. Keys look like `LLM_...`. Do not share a key with anyone.
 
-## macOS
-
-1. Copy `MuseSetup.app` to your Desktop (or anywhere).
-2. First launch only: **right-click -> Open**. macOS quarantines downloaded
-   apps; a plain double-click may refuse to run. Alternatively:
-
-   ```sh
-   xattr -dr com.apple.quarantine /path/to/MuseSetup.app
-   ```
-
-3. Enter proxy username, proxy password, and your Meta API key (both secrets
-   are masked).
-4. Success dialog -> open Terminal in a project and run `muse`.
-
-## macOS: egress toggle
-
-`Pantheon Egress.app` puts an icon in the menu bar and opens a small window rendered with HTML/CSS (`desktop/macos/src/ui.html`, displayed in a WKWebView): 🌐 = US egress on, ○ = off
-(direct). Click it to switch; no dialogs, no prompts. It flips the `proxy`
-key in `~/.config/muse/settings.json` using the URL saved at
-`~/.config/muse-vpn/proxy-url`.
-
-Headless controls, same binary:
+## macOS (CLI)
 
 ```sh
-desktop/macos/Pantheon Egress.app/Contents/MacOS/MuseProxy --status   # on|off
-desktop/macos/Pantheon Egress.app/Contents/MacOS/MuseProxy --toggle
+ln -sf "$PWD/desktop/cli/pantheon.py" ~/.local/bin/pantheon
+cp desktop/cli/setup.py ~/.config/muse-vpn/setup.py
+pantheon setup        # proxy login + your own API key
+pantheon status       # route, repair config, credential state
+pantheon doctor       # test the route (add --heal to self-repair)
 ```
 
-Rebuild from source (needs Xcode command-line tools):
-
-```sh
-swiftc -O desktop/macos/src/MuseProxy.swift -o MuseProxy -framework Cocoa
-```
+| command | does |
+|---|---|
+| `pantheon on` / `off` | enable/disable the US route |
+| `pantheon status` | route, repair config, credential, muse install |
+| `pantheon heal` | re-point the SSH firewall rule at this IP |
+| `pantheon config <https-url>` | load `{"route": "..."}` from a URL |
+| `pantheon setup` | install/configure muse |
+| `pantheon doctor [--heal]` | test the route, optionally heal and retest |
 
 ## Changing the route without a new build
 
