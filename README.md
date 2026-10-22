@@ -34,7 +34,7 @@ desktop/windows/MuseSetup.cmd   setup wizard (Windows Forms dialogs)
 
 ## macOS: egress toggle
 
-`MuseProxy.app` puts an icon in the menu bar: 🌐 = US egress on, ○ = off
+`MuseProxy.app` puts an icon in the menu bar and opens a small window rendered with HTML/CSS (`desktop/macos/src/ui.html`, displayed in a WKWebView): 🌐 = US egress on, ○ = off
 (direct). Click it to switch; no dialogs, no prompts. It flips the `proxy`
 key in `~/.config/muse/settings.json` using the URL saved at
 `~/.config/muse-vpn/proxy-url`.
