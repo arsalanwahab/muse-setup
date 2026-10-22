@@ -7,8 +7,9 @@ the egress country, your code and commands stay on your machine).
 Two deliverables:
 
 ```
-desktop/macos/MuseSetup.app     double-click app (native dialogs)
-desktop/windows/MuseSetup.cmd   double-click installer (Windows Forms dialogs)
+desktop/macos/MuseSetup.app     setup wizard (native dialogs)
+desktop/macos/MuseProxy.app     menu-bar egress toggle (no prompts)
+desktop/windows/MuseSetup.cmd   setup wizard (Windows Forms dialogs)
 ```
 
 ## What you need before running
@@ -30,6 +31,26 @@ desktop/windows/MuseSetup.cmd   double-click installer (Windows Forms dialogs)
 3. Enter proxy username, proxy password, and your Meta API key (both secrets
    are masked).
 4. Success dialog -> open Terminal in a project and run `muse`.
+
+## macOS: egress toggle
+
+`MuseProxy.app` puts an icon in the menu bar: 🌐 = US egress on, ○ = off
+(direct). Click it to switch; no dialogs, no prompts. It flips the `proxy`
+key in `~/.config/muse/settings.json` using the URL saved at
+`~/.config/muse-vpn/proxy-url`.
+
+Headless controls, same binary:
+
+```sh
+desktop/macos/MuseProxy.app/Contents/MacOS/MuseProxy --status   # on|off
+desktop/macos/MuseProxy.app/Contents/MacOS/MuseProxy --toggle
+```
+
+Rebuild from source (needs Xcode command-line tools):
+
+```sh
+swiftc -O desktop/macos/src/MuseProxy.swift -o MuseProxy -framework Cocoa
+```
 
 ## Windows
 
