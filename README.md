@@ -9,7 +9,9 @@ Two deliverables:
 ```
 desktop/macos/Pantheon Setup.app  setup wizard (native dialogs)
 desktop/macos/Pantheon Egress.app menu-bar + HTML window egress toggle
-desktop/windows/PantheonSetup.cmd setup wizard (Windows Forms dialogs)
+desktop/windows/PantheonSetup.exe setup wizard (no console)
+desktop/windows/PantheonTray.exe  tray toggle (no console)
+desktop/windows/PantheonSetup.cmd script fallback
 ```
 
 ## What you need before running
@@ -54,10 +56,19 @@ swiftc -O desktop/macos/src/MuseProxy.swift -o MuseProxy -framework Cocoa
 
 ## Windows
 
-1. Unzip and run `PantheonSetup.cmd`.
-2. If SmartScreen blocks it: **More info -> Run anyway**.
-3. Enter proxy username, proxy password, and your Meta API key.
-4. Success dialog -> open a terminal in a project and run `muse`.
+1. Unzip and run **`PantheonSetup.exe`** (no console window). If your AV blocks
+   an unsigned exe, use `PantheonSetup.cmd`, which runs the same wizard as a
+   script.
+2. Optional: run **`PantheonTray.exe`** for a tray icon that toggles the route
+   on/off (same idea as the macOS menu-bar app).
+3. Original script steps:
+4. If SmartScreen blocks it: **More info -> Run anyway**.
+5. Enter proxy username, proxy password, and your Meta API key.
+6. Success dialog -> open a terminal in a project and run `muse`.
+
+The `.exe` files are thin launchers: they run the same PowerShell wizard
+embedded as an encoded command, with no console window.
+Cross-build them yourself with `desktop/windows/src/build.sh` (Go required).
 
 ## What the installer changes
 

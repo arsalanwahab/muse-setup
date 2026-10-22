@@ -95,6 +95,12 @@ try {
     }
     $settings.endpoint_transport | Add-Member -NotePropertyName proxy -NotePropertyValue $proxy -Force
     $settings | ConvertTo-Json -Depth 20 | Set-Content -Path $settingsPath -Encoding UTF8
+
+    # Remember the route so the tray app can toggle it later.
+    $routeDir = Join-Path $env:USERPROFILE ".config\muse-vpn"
+    New-Item -ItemType Directory -Force -Path $routeDir | Out-Null
+    Set-Content -Path (Join-Path $routeDir "proxy-url") -Value $proxy -Encoding ASCII
+
     Write-Host "Proxy configured."
 
     $env:META_API_KEY | & muse auth set --provider meta --api-key-stdin
