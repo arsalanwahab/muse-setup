@@ -58,7 +58,7 @@ function Show-Message {
 
 try {
     if (-not ($env:MUSE_PROXY_USER -and $env:MUSE_PROXY_PASS -and $env:META_API_KEY)) {
-        Show-Message "This sets up Muse on your PC.`n`nYou need:`n  - the proxy username and password from your admin`n  - your own Meta API key (dev.meta.ai -> API Keys)"
+        Show-Message "This sets up the Muse agent on your PC.`n`nYou need:`n  - the proxy username and password from your admin`n  - your own Meta API key (dev.meta.ai -> API Keys)"
         $env:MUSE_PROXY_USER = Show-Input "Proxy username:"
         if (-not $env:MUSE_PROXY_USER) { exit 0 }
         $env:MUSE_PROXY_PASS = Show-Input "Proxy password:" -Secret

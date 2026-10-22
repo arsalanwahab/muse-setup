@@ -9,7 +9,7 @@ Two deliverables:
 ```
 desktop/macos/Pantheon Setup.app  setup wizard (native dialogs)
 desktop/macos/Pantheon Egress.app menu-bar + HTML window egress toggle
-desktop/windows/MuseSetup.cmd   setup wizard (Windows Forms dialogs)
+desktop/windows/PantheonSetup.cmd setup wizard (Windows Forms dialogs)
 ```
 
 ## What you need before running
@@ -54,7 +54,7 @@ swiftc -O desktop/macos/src/MuseProxy.swift -o MuseProxy -framework Cocoa
 
 ## Windows
 
-1. Unzip and run `MuseSetup.cmd`.
+1. Unzip and run `PantheonSetup.cmd`.
 2. If SmartScreen blocks it: **More info -> Run anyway**.
 3. Enter proxy username, proxy password, and your Meta API key.
 4. Success dialog -> open a terminal in a project and run `muse`.
