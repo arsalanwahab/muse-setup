@@ -7,8 +7,8 @@ the egress country, your code and commands stay on your machine).
 Two deliverables:
 
 ```
-desktop/macos/MuseSetup.app     setup wizard (native dialogs)
-desktop/macos/MuseProxy.app     menu-bar egress toggle (no prompts)
+desktop/macos/Pantheon Setup.app  setup wizard (native dialogs)
+desktop/macos/Pantheon Egress.app menu-bar + HTML window egress toggle
 desktop/windows/MuseSetup.cmd   setup wizard (Windows Forms dialogs)
 ```
 
@@ -34,7 +34,7 @@ desktop/windows/MuseSetup.cmd   setup wizard (Windows Forms dialogs)
 
 ## macOS: egress toggle
 
-`MuseProxy.app` puts an icon in the menu bar and opens a small window rendered with HTML/CSS (`desktop/macos/src/ui.html`, displayed in a WKWebView): 🌐 = US egress on, ○ = off
+`Pantheon Egress.app` puts an icon in the menu bar and opens a small window rendered with HTML/CSS (`desktop/macos/src/ui.html`, displayed in a WKWebView): 🌐 = US egress on, ○ = off
 (direct). Click it to switch; no dialogs, no prompts. It flips the `proxy`
 key in `~/.config/muse/settings.json` using the URL saved at
 `~/.config/muse-vpn/proxy-url`.
@@ -42,8 +42,8 @@ key in `~/.config/muse/settings.json` using the URL saved at
 Headless controls, same binary:
 
 ```sh
-desktop/macos/MuseProxy.app/Contents/MacOS/MuseProxy --status   # on|off
-desktop/macos/MuseProxy.app/Contents/MacOS/MuseProxy --toggle
+desktop/macos/Pantheon Egress.app/Contents/MacOS/MuseProxy --status   # on|off
+desktop/macos/Pantheon Egress.app/Contents/MacOS/MuseProxy --toggle
 ```
 
 Rebuild from source (needs Xcode command-line tools):

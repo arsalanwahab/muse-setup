@@ -1,5 +1,5 @@
 #!/bin/bash
-# Muse Setup — GUI launcher. Double-click the .app.
+# Pantheon Setup — GUI launcher. Double-click the .app.
 set -u
 QUIET="${MUSE_SETUP_SILENT:-0}"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -8,7 +8,7 @@ say() {
   if [ "$QUIET" = "1" ]; then
     echo "$1"
   else
-    osascript -e "display dialog \"$1\" buttons {\"OK\"} default button \"OK\" with title \"Muse Setup\"" >/dev/null 2>&1
+    osascript -e "display dialog \"$1\" buttons {\"OK\"} default button \"OK\" with title \"Pantheon Setup\"" >/dev/null 2>&1
   fi
 }
 
@@ -16,7 +16,7 @@ fail() {
   if [ "$QUIET" = "1" ]; then
     echo "FAILED: $1" >&2
   else
-    osascript -e "display dialog \"$1\" buttons {\"OK\"} default button \"OK\" with title \"Muse Setup\" with icon stop" >/dev/null 2>&1
+    osascript -e "display dialog \"$1\" buttons {\"OK\"} default button \"OK\" with title \"Pantheon Setup\" with icon stop" >/dev/null 2>&1
   fi
   exit 1
 }
@@ -25,7 +25,7 @@ ask() {
   local prompt="$1" hidden="${2:-0}" extra=""
   [ "$hidden" = "1" ] && extra=" with hidden answer"
   osascript \
-    -e "display dialog \"${prompt}\" default answer \"\"${extra} buttons {\"Cancel\", \"Continue\"} default button \"Continue\" with title \"Muse Setup\"" \
+    -e "display dialog \"${prompt}\" default answer \"\"${extra} buttons {\"Cancel\", \"Continue\"} default button \"Continue\" with title \"Pantheon Setup\"" \
     -e 'text returned of result' 2>/dev/null || exit 0
 }
 
@@ -47,12 +47,12 @@ It takes about a minute."
 fi
 
 export MUSE_PROXY_USER MUSE_PROXY_PASS META_API_KEY
-[ "$QUIET" = "1" ] || osascript -e 'display notification "Installing and verifying…" with title "Muse Setup"' >/dev/null 2>&1
+[ "$QUIET" = "1" ] || osascript -e 'display notification "Installing and verifying…" with title "Pantheon Setup"' >/dev/null 2>&1
 OUT=$(/usr/bin/python3 "$DIR/../Resources/setup.py" 2>&1)
 RC=$?
 
 if [ $RC -eq 0 ]; then
-  say "Muse is ready.
+  say "Pantheon + Muse is ready.
 
 Open Terminal, cd into a project, and run:
 

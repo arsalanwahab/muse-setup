@@ -2,9 +2,9 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>CFBundleName</key><string>MuseProxy</string>
-  <key>CFBundleDisplayName</key><string>Muse Egress</string>
-  <key>CFBundleIdentifier</key><string>com.muse.proxy</string>
+  <key>CFBundleName</key><string>Pantheon Egress</string>
+  <key>CFBundleDisplayName</key><string>Pantheon Egress</string>
+  <key>CFBundleIdentifier</key><string>com.pantheon.egress</string>
   <key>CFBundleVersion</key><string>1.0</string>
   <key>CFBundleShortVersionString</key><string>1.0</string>
   <key>CFBundlePackageType</key><string>APPL</string>

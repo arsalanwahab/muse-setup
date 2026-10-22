@@ -1,4 +1,4 @@
-# Muse Setup for Windows — GUI installer.
+# Pantheon Setup for Windows — GUI installer.
 # Installs the Muse CLI, stores the user's own API key, points it at the
 # company egress proxy, and verifies the connection.
 
@@ -7,7 +7,7 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
 $ProxyHost = "184.197.234.208:8443"
-$Title = "Muse Setup"
+$Title = "Pantheon Setup"
 
 function Show-Input {
     param([string]$Prompt, [switch]$Secret)
@@ -106,7 +106,7 @@ try {
     $out = & muse exec "reply with exactly: setup-ok" 2>&1 | Out-String
     $ErrorActionPreference = $previous
     if ($out -match "setup-ok") {
-        Show-Message "Muse is ready.`n`nOpen a terminal, cd into a project, and run:`n`n    muse"
+        Show-Message "Pantheon + Muse is ready.`n`nOpen a terminal, cd into a project, and run:`n`n    muse"
     } else {
         $tail = $out.Substring([Math]::Max(0, $out.Length - 700))
         Show-Message "Setup failed:`n`n$tail" -IsError
