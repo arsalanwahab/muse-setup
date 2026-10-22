@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """pantheon — Muse route CLI.
 
-    pantheon status            show route, repair config, credential state
-    pantheon on | off          enable/disable the US route
-    pantheon heal              re-point the SSH firewall rule at this IP
-    pantheon config <url>      load {"route": "..."} JSON from an https URL
-    pantheon setup             install/configure muse (prompts for secrets)
-    pantheon doctor [--heal]   test the route, optionally heal and retest
+  pantheon status            route, repair config, credential state
+  pantheon on | off          enable/disable the US route
+  pantheon setup             install muse, store your key, configure the route
+  pantheon heal              re-point the SSH firewall rule at this IP
+  pantheon config <url>      load {"route": "..."} JSON from an https URL
+  pantheon doctor [--heal]   test the route, optionally heal and retest
 """
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ import getpass
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 import time
@@ -23,13 +24,11 @@ HOME = pathlib.Path.home()
 SETTINGS = HOME / ".config/muse/settings.json"
 ROUTE_FILE = HOME / ".config/muse-vpn/proxy-url"
 HEAL_FILE = HOME / ".config/muse-vpn/heal.json"
-SETUP = HOME / ".config/muse-vpn/setup.py"
-MUSE = pathlib.Path("/usr/local/bin/muse")
-if not MUSE.exists():
-    MUSE = HOME / ".local/bin/muse"
+DEFAULT_HOST = "184.197.234.208:8443"
+INSTALL_SH = "https://dev.meta.ai/install.sh"
 
 
-# ---------------------------------------------------------------- storage
+# ------------------------------------------------------------------ storage
 
 def read_json(path: pathlib.Path) -> dict:
     try:
@@ -75,9 +74,9 @@ def set_proxy(url: str | None) -> None:
 
 def hide(url: str | None) -> str:
     if not url:
-        return "—"
-    rest = url.split("@")[-1]
-    return rest.split("://")[-1]
+        return "-"
+    host = url.split("@")[-1].split("://")[-1]
+    return "Pantheon Routes" if host == DEFAULT_HOST else host
 
 
 def heal_config() -> tuple[str, str] | None:
@@ -87,11 +86,15 @@ def heal_config() -> tuple[str, str] | None:
     return None
 
 
-def curl(args: list[str]) -> subprocess.CompletedProcess:
-    return subprocess.run(["curl", "-sS", "-m", "25", *args], text=True, capture_output=True)
+def muse_bin() -> str:
+    return shutil.which("muse") or str(HOME / ".local/bin/muse")
 
 
-# ---------------------------------------------------------------- commands
+def curl(args: list[str], timeout: int = 25) -> subprocess.CompletedProcess:
+    return subprocess.run(["curl", "-sS", "-m", str(timeout), *args], text=True, capture_output=True)
+
+
+# ------------------------------------------------------------------ commands
 
 def cmd_status() -> int:
     on = active_proxy() is not None
@@ -99,8 +102,8 @@ def cmd_status() -> int:
     print(f"saved      : {hide(route())}")
     print(f"repair     : {'configured' if heal_config() else 'not configured'}")
     providers = read_json(HOME / ".config/muse/auth.json").get("providers", {})
-    print(f"credential : {'present (' + ', '.join(providers) + ')' if providers else 'none — run pantheon setup'}")
-    print(f"muse       : {'installed' if MUSE.exists() else 'missing'}")
+    print(f"credential : {('present (' + ', '.join(providers) + ')') if providers else 'none — run pantheon setup'}")
+    print(f"muse       : {'installed' if pathlib.Path(muse_bin()).exists() else 'missing'}")
     return 0
 
 
@@ -120,43 +123,40 @@ def cmd_off() -> int:
     return 0
 
 
-def cmd_heal() -> int:
+def heal_route() -> tuple[bool, str]:
     cfg = heal_config()
     if not cfg:
-        print("no repair config at ~/.config/muse-vpn/heal.json", file=sys.stderr)
-        return 1
+        return False, "no repair config at ~/.config/muse-vpn/heal.json"
     url, token = cfg
     proc = curl(["-X", "POST", url, "-H", "content-type: application/json",
-                 "-d", json.dumps({"token": token})])
+                 "-d", json.dumps({"token": token})], timeout=20)
     if proc.returncode != 0:
-        print(f"repair failed: {proc.stderr.strip()}", file=sys.stderr)
-        return 1
+        return False, f"repair failed: {proc.stderr.strip()}"
     try:
-        payload = json.loads(proc.stdout or "{}")
+        cidr = json.loads(proc.stdout or "{}").get("cidr")
     except Exception:
-        payload = {}
-    cidr = payload.get("cidr")
-    if not cidr:
-        print(f"repair failed: {proc.stdout.strip() or proc.stderr.strip()}", file=sys.stderr)
-        return 1
-    print(f"repaired for {cidr}")
-    return 0
+        cidr = None
+    return (True, f"repaired for {cidr}") if cidr else (False, "repair failed")
+
+
+def cmd_heal() -> int:
+    ok, message = heal_route()
+    print(message, file=sys.stdout if ok else sys.stderr)
+    return 0 if ok else 1
 
 
 def cmd_config(url: str) -> int:
     if not url.startswith("https://"):
         print("config URL must be https", file=sys.stderr)
         return 1
-    proc = curl([url])
+    proc = curl([url], timeout=20)
     if proc.returncode != 0:
         print(f"download failed: {proc.stderr.strip()}", file=sys.stderr)
         return 1
     try:
-        data = json.loads(proc.stdout)
+        new_route = (json.loads(proc.stdout).get("route") or "").strip()
     except Exception:
-        print("config is not valid JSON", file=sys.stderr)
-        return 1
-    new_route = (data.get("route") or "").strip()
+        new_route = ""
     if not new_route:
         print('config must contain {"route": "http://user:pass@host:port"}', file=sys.stderr)
         return 1
@@ -167,21 +167,64 @@ def cmd_config(url: str) -> int:
     return 0
 
 
+def install_muse() -> str:
+    exe = muse_bin()
+    if pathlib.Path(exe).exists():
+        return exe
+    print("installing muse…")
+    subprocess.run(["sh", "-c", f"curl -fsSL {INSTALL_SH} | sh"], check=True)
+    return muse_bin()
+
+
+def verify() -> tuple[bool, str]:
+    try:
+        proc = subprocess.run(
+            [muse_bin(), "exec", "reply with exactly: setup-ok"],
+            text=True, capture_output=True, timeout=240,
+        )
+    except Exception as exc:
+        return False, str(exc)
+    if "setup-ok" in proc.stdout:
+        return True, "ok"
+    return False, (proc.stdout + proc.stderr).strip()[-600:]
+
+
 def cmd_setup() -> int:
-    if not SETUP.exists():
-        print(f"missing {SETUP}", file=sys.stderr)
-        return 1
     user = input("Proxy username: ").strip()
     password = getpass.getpass("Proxy password: ")
     key = getpass.getpass("Meta API key: ").strip()
     if not (user and password and key):
         print("all three values are required", file=sys.stderr)
         return 1
-    env = os.environ.copy()
-    env.update(MUSE_PROXY_USER=user, MUSE_PROXY_PASS=password, META_API_KEY=key)
-    if route():
-        env["MUSE_ROUTE_URL"] = route()
-    return subprocess.call([sys.executable, str(SETUP)], env=env)
+
+    exe = install_muse()
+    import urllib.parse
+    endpoint = (route() or f"http://{DEFAULT_HOST}").split("@")[-1].split("://")[-1]
+    proxy = f"http://{urllib.parse.quote(user, safe='')}:{urllib.parse.quote(password, safe='')}@{endpoint}"
+
+    set_proxy(proxy)
+    save_route(proxy)
+
+    stored = subprocess.run(
+        [exe, "auth", "set", "--provider", "meta", "--api-key-stdin"],
+        input=key + "\n", text=True, capture_output=True,
+    )
+    if stored.returncode != 0:
+        print(f"could not store the API key: {stored.stderr.strip()}", file=sys.stderr)
+        return 1
+
+    print("verifying…")
+    ok, message = verify()
+    if not ok and ("timed out" in message.lower() or "transport error" in message.lower()):
+        healed, _ = heal_route()
+        if healed:
+            print("repaired firewall rule, retrying…")
+            ok, message = verify()
+    if not ok:
+        print(f"verification failed:\n{message}", file=sys.stderr)
+        return 1
+    print("ready — run: muse")
+    return 0
 
 
 def test_route() -> tuple[bool, str]:
@@ -189,7 +232,7 @@ def test_route() -> tuple[bool, str]:
     if not url:
         return False, "no route configured"
     proc = curl(["-x", url, "-o", "/dev/null", "-w", "%{http_code} %{time_total}",
-                 "https://api.meta.ai/v1/models"])
+                 "https://api.meta.ai/v1/models"], timeout=20)
     if proc.returncode != 0:
         return False, f"route FAILED ({proc.stderr.strip()})"
     parts = proc.stdout.split()
@@ -224,13 +267,13 @@ def main() -> int:
         return cmd_off()
     if command == "heal":
         return cmd_heal()
+    if command == "setup":
+        return cmd_setup()
     if command == "config":
         if len(args) < 2:
             print("usage: pantheon config <https-url>", file=sys.stderr)
             return 1
         return cmd_config(args[1])
-    if command == "setup":
-        return cmd_setup()
     if command == "doctor":
         return cmd_doctor("--heal" in args[1:])
     print(__doc__)
