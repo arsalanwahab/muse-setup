@@ -318,7 +318,10 @@ def read_key() -> str:
     fd = sys.stdin.fileno()
     old = termios.tcgetattr(fd)
     try:
-        tty.setraw(fd, termios.TCSANOW)  # keep already-typed keys
+        try:
+            tty.setraw(fd, termios.TCSANOW)  # Python 3.12+: keep already-typed keys
+        except TypeError:
+            tty.setraw(fd)
         ch = sys.stdin.read(1)
         if ch == "\x1b":
             ch += sys.stdin.read(2)

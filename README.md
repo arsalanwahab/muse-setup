@@ -34,6 +34,20 @@ Run `pantheon` with no arguments (on a terminal) for the menu:
 Arrow keys to move, Enter to pick, `q` to quit. Plain subcommands below still
 work for scripts and CI.
 
+## Linux
+
+Same single file; needs `python3` (3.8+) and `curl`, both standard.
+
+```sh
+mkdir -p ~/.local/bin
+ln -sf "$PWD/cli/pantheon" ~/.local/bin/pantheon
+export PATH="$HOME/.local/bin:$PATH"   # add to ~/.bashrc if not already
+pantheon setup
+```
+
+On a headless server, make sure a credential store is available (GNOME Keyring
+or `dbus-run-session`); otherwise muse reports it cannot store the API key.
+
 ## Commands
 
 | command | does |
