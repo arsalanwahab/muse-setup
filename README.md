@@ -12,6 +12,11 @@ ln -sf "$PWD/cli/pantheon" ~/.local/bin/pantheon
 
 ## Interactive
 
+The header shows the Pantheon owl on terminals at least 118 columns wide, and
+falls back to the wordmark on narrower ones (the art is in `ascii-art-3.txt`).
+
+
+
 Run `pantheon` with no arguments (on a terminal) for the menu:
 
 ```

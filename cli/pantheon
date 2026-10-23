@@ -276,17 +276,47 @@ class C:
     success = "\x1b[38;2;65;195;70m"
     error = "\x1b[38;2;255;59;48m"
     info = "\x1b[38;2;33;150;243m"
+    blue = "\x1b[38;2;70;120;255m"
 
 
-LOGO = f"""{C.primary}{C.bold}
-  ██████╗  █████╗ ███╗   ██╗████████╗██╗  ██╗███████╗ ██████╗ ███╗   ██╗
-  ██╔══██╗██╔══██╗████╗  ██║╚══██╔══╝██║  ██║██╔════╝██╔═══██╗████╗  ██║
-  ██████╔╝███████║██╔██╗ ██║   ██║   ███████║█████╗  ██║   ██║██╔██╗ ██║
-  ██╔═══╝ ██╔══██║██║╚██╗██║   ██║   ██╔══██║██╔══╝  ██║   ██║██║╚██╗██║
-  ██║     ██║  ██║██║ ╚████║   ██║   ██║  ██║███████╗╚██████╔╝██║ ╚████║
-  ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═══╝{C.reset}
+ART_LOGO = """     ½¢                                        ¸>)
+    ‡‰¢nÌ‹                         ^lsöu¼½söòs¢uus                   tz¼¼½‰u¢ön@@nöòsòsss¢uuuu¢u¢ssòòòòòs¢‰‰‰¢n
+   ‡‰¢önnöòƒ     o¤%z¼‰sönööööòs¢¢¢s¢sss¢¢¢¢¢u¢¢sso                  z¢¢¢¢¢sss¢¢uuuuuuussòss¢¢¢ssòss¢u‰‰uuu¢¢¢¢
+     JÌÌÌóóCnC    J‰¢sòöòòsss¢sòöööòs¢½½‰‰sö@‰r»                     ¢@ns‰‡víïïïììï><ï1nn@@@ö‡zƒ¤or1lívrJòöòòòs
+       •öòssssö   zös‰½½½u¢¢¢‡t7[C´                                  ‰s¢¢‰s            òuuu‰)            ‡s¢u‰‰
+          LóC”               @ÌÌCnu                                  zssòòó            3nòs‰{            %‰¼½½‡
+                              Ï¢u‰‰u                                 u@nö¢@            VÌóCCì            ½@nönn
+   ¢                           òösu‰‡                                ½u‰‰¢sòòsu‰½u¢¢òòönönnöòs¢¢u¢¢¢u¢¢sssòs¢¢‰
+ 1¼½u¢ö                         ÌÌ@òö                                s@ö¢uu‰ussòòòss¢uusssòòòòööösss¢u‰‰‰‰¢sònö
+ösnöönnnò(        ½ö@Cnö¢¢¢ò@C@@C@nnsò¢½¼½‰¢sö@CCö                   ƒssss@            òu‰uu}            zòönnö
+  }u‰uu¢¢sò‡     ˆnnöö@CCóóóC@öòss¢¢sòòönnnöösssö@                   I‰¢ònÏ            LÌCn¢/            ¼nò‰¼z
+     %n@CCóÌ±     ½¢sòö@CÌÏÏó@òòs¢uu½‰‰¢òön@@nòu‰‰                   ‰Cö¢¼ò            ón@CC[            ƒ¢¢uuu
+       *¢ò¢>                              ¼sòòönö                    ¤‰¼½‰n­~——ª“ºˆ´…’ˆnuuuuí“”„–›;;‹°~³“‰ssòön
+         ‘                             ·@òs¢‰‡%:                     I‰‰u¢¢¢s¢¢ssssòönöössss¢sönn@@@@nòòò¢ss¢u‰
+                                     ¬z½usön@˜                       Jnns¢uuu‰¢òööòs¢¢¢sòönn@@@@@öòòòòòönn@C@ó@
+        :                          <öösu½zz„                                            º@–
+        ó@@ò‰î                   z‰¢sönnò                                             ‰nnnnò
+       us¢ònö                 <öööòò¢un                              óCz´    l¼‰u¢¢    nsu½¼z¼            •tII
+      «nnò¢¢~               ò½‰¢sòöò>                               uuu¢uò   %nö¢òn      u¼½uòs:         ½uuu¢¢º
+      n@nö¢J            ^òssòön@C‰                                 °Cnöò¢    oööönC       /sòs¢u‡         ì½‰‰‰¼}
+     Ìòöönó        ‡¼‰¢òöööööòò                                    ¢¢¢sòò    îöò‰½¢        ¨¢½%«    %IJc   ¬nC@n@v
+    ìòòööö—      snnöòòs¢sòn¬                                     òön¢‰¼     =¢ööCÏ          ‘      @s‰‡%   ‚‰¢¢ssz
+   ^CÌÌÌóc     ‘¼usön@@nööòui                                    >¢¢sòò      1@óóÏL                 ½¼½½s    ·öC@n@Ì
+  ·snòòs‰     ¢u¢sòöò{¿su‰‰‰½zz‰I/                              )‡‡‡½¼¨      ln@ö¢‡                J¢ö@CÍ      z¼‡zJ‡
+  ‰¼‰½½¢    uööòss¢t    zss‰¼zzz‡‡¼½½u¢¢¢¢u‰½¼¼¼½‰‰u¢½         7¢òöò¢¿       ‹J¼‰u¢¢¢òönnöòs‰½½‰‰u¢ssòò¢[      ‹sòòs½–
+ òönnnò˜     ì¼¼‡½         *‰J¼uuuu‰‰‰‰u¢¢¢¢¢u¢¢‰½¼‡¼             ï¼ì         «¢öööòòsss¢¢u¢¢u¢ssòööò¢¼t        !×
+  ;½s¼=        s¿                 ~¬¿ícƒ¼òönCÌÏÏ@òu¼»                           ’¼@su¼¼½‰u¢öCÌÏÏÏóóòï"""
+
+WORDMARK = f"""{C.primary}{C.bold}  PANTHEON{C.reset}
 {C.muted}  Muse Code · route control{C.reset}
 """
+
+
+def logo() -> str:
+    width = shutil.get_terminal_size(fallback=(80, 24)).columns
+    if width >= max(len(l) for l in ART_LOGO.splitlines()):
+        return f"{C.blue}{ART_LOGO}{C.reset}\n{C.primary}{C.bold}  PANTHEON{C.reset}  {C.muted}Muse Code · route control{C.reset}"
+    return WORDMARK
 
 
 def is_tty() -> bool:
@@ -300,7 +330,7 @@ def dot(ok: bool) -> str:
 def header() -> None:
     on = active_proxy() is not None
     providers = read_json(HOME / ".config/muse/auth.json").get("providers", {})
-    print(LOGO)
+    print(logo())
     print(f"  {C.bold}Route{C.reset}       {dot(on)}{C.bold}{'ON' if on else 'OFF'}{C.reset}"
           f"  {C.muted}{hide(active_proxy()) if on else 'direct'}{C.reset}")
     print(f"  {C.bold}Repair{C.reset}      {dot(heal_config() is not None)}"
@@ -312,45 +342,18 @@ def header() -> None:
     print()
 
 
-def choose(options: list[str], selected: int = 0) -> int | None:
-    """Arrow-key menu. Returns the index, or None on q / ctrl-c."""
-    if not is_tty():
-        for i, option in enumerate(options, 1):
-            print(f"  {i}. {option}")
-        try:
-            raw = input("  select: ").strip()
-        except EOFError:
-            return None
-        return int(raw) - 1 if raw.isdigit() and 1 <= int(raw) <= len(options) else None
-
+def read_key() -> str:
+    """Read one keypress (including arrow-key escape sequences)."""
     fd = sys.stdin.fileno()
     old = termios.tcgetattr(fd)
-    sys.stdout.write(C.hide)
     try:
-        tty.setraw(fd)
-        while True:
-            for i, option in enumerate(options):
-                if i == selected:
-                    print(f"  {C.primary}❯ {C.bold}{option}{C.reset}")
-                else:
-                    print(f"  {C.muted}  {option}{C.reset}")
-            sys.stdout.flush()
-            key = sys.stdin.read(1)
-            if key in ("q", "Q", "\x03"):
-                return None
-            if key == "\x1b":
-                rest = sys.stdin.read(2)
-                if rest == "[A":
-                    selected = (selected - 1) % len(options)
-                elif rest == "[B":
-                    selected = (selected + 1) % len(options)
-            elif key in ("\r", "\n"):
-                return selected
-            sys.stdout.write(f"\x1b[{len(options)}A")
+        tty.setraw(fd, termios.TCSANOW)  # keep already-typed keys
+        ch = sys.stdin.read(1)
+        if ch == "\x1b":
+            ch += sys.stdin.read(2)
     finally:
         termios.tcsetattr(fd, termios.TCSADRAIN, old)
-        sys.stdout.write(C.show)
-        sys.stdout.flush()
+    return ch
 
 
 def pause() -> None:
@@ -363,13 +366,36 @@ def pause() -> None:
 def interactive() -> int:
     actions = ["Set up / change key", "Toggle route", "Test route (doctor)",
                "Repair connection (heal)", "Load config URL", "Refresh", "Quit"]
+    selected = 0
     while True:
         print(C.clear, end="")
         header()
-        index = choose(actions)
-        if index is None or actions[index] == "Quit":
+        for i, option in enumerate(actions):
+            if i == selected:
+                print(f"  {C.primary}❯ {C.bold}{option}{C.reset}")
+            else:
+                print(f"  {C.muted}  {option}{C.reset}")
+        sys.stdout.flush()
+
+        key = read_key()
+        if key in ("q", "Q", "\x03"):
+            print(C.clear, end="")
             return 0
-        choice = actions[index]
+        if key == "\x1b[A":
+            selected = (selected - 1) % len(actions)
+            continue
+        if key == "\x1b[B":
+            selected = (selected + 1) % len(actions)
+            continue
+        if key not in ("\r", "\n"):
+            continue
+
+        choice = actions[selected]
+        if choice == "Quit":
+            print(C.clear, end="")
+            return 0
+        print(C.clear, end="")
+        header()
         print()
         if choice == "Set up / change key":
             rc = cmd_setup()
