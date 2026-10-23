@@ -212,8 +212,9 @@ def cmd_setup() -> int:
         input=key + "\n", text=True, capture_output=True,
     )
     if stored.returncode != 0:
-        print(f"could not store the API key: {stored.stderr.strip()}", file=sys.stderr)
-        return 1
+        # Headless Linux often has no keyring; fall back to the env var.
+        print("could not store the key in the system keyring; using META_API_KEY for this shell")
+        os.environ["META_API_KEY"] = key
 
     print("verifying…")
     ok, message = verify()
@@ -225,6 +226,9 @@ def cmd_setup() -> int:
     if not ok:
         print(f"verification failed:\n{message}", file=sys.stderr)
         return 1
+    if stored.returncode != 0:
+        print("add this to your shell rc so future runs work:")
+        print(f'  export META_API_KEY=\"{key}\"')
     print("ready — run: muse")
     return 0
 
